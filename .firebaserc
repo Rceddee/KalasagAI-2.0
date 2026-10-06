@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "kalasagai-9dc73"
+  },
+  "targets": {
+    "kalasagai-9dc73": {
+      "hosting": {
+        "dashboard": [
+          "kalasagai-9dc73"
+        ],
+        "mobile": [
+          "kalasag-mobile"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

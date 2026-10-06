@@ -1,0 +1,113 @@
+# ==============================================================================
+# Root .gitignore for Kalasag-AI Monorepo
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Secret Credentials (CRITICAL - DO NOT COMMIT)
+# ------------------------------------------------------------------------------
+.env
+.env*
+!.env.example
+*.env
+*.env.*
+!*.env.example
+*.local
+
+# Private Keys & Keystores
+*.pem
+*.key
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+
+# Cloud Credentials & Service Accounts
+*-service-account*.json
+service-account*.json
+credentials.json
+google-services.json
+GoogleService-Info.plist
+
+# ------------------------------------------------------------------------------
+# 2. Dependencies
+# ------------------------------------------------------------------------------
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ------------------------------------------------------------------------------
+# 3. Build & Distribution Outputs
+# ------------------------------------------------------------------------------
+# Next.js (Dashboard)
+.next/
+out/
+build/
+.vercel
+
+# Expo / React Native (Mobile)
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+next-env.d.ts
+expo-env.d.ts
+
+# Firebase Caches & Logs
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# ------------------------------------------------------------------------------
+# 4. Large Binary Files & Mobile App Packages
+# ------------------------------------------------------------------------------
+*.apk
+*.aab
+*.ipa
+kalasag-dashboard/public/downloads/*.apk
+
+# ------------------------------------------------------------------------------
+# 5. Mobile Native Ephemeral Prebuilds (Managed Expo Workflow)
+# ------------------------------------------------------------------------------
+kalasag-mobile/android/
+kalasag-mobile/ios/
+.gradle/
+.kotlin/
+.cxx/
+local.properties
+.metro-health-check*
+
+# ------------------------------------------------------------------------------
+# 6. Logs & Diagnostics
+# ------------------------------------------------------------------------------
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ------------------------------------------------------------------------------
+# 7. OS & IDE Metadata
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Temporary / Scratch directories
+scratch/
+coverage/
