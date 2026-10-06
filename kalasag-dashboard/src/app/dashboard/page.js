@@ -624,7 +624,7 @@ export default function DashboardPage() {
                   >
                     <div className="card-top">
                       <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-                        <span className="badge-blotter-id">{formatBlotterId(inc, incidents.indexOf(inc), incidents.length)}</span>
+                        <span className="badge-blotter-id">{formatBlotterId(inc)}</span>
                         <span className={`badge ${catInfo.class}`}>{catInfo.label}</span>
                         {(inc.secondary_category || (inc.incident_description && inc.incident_description.toLowerCase().includes('debris') && inc.category === 'fire incident')) && (
                           <span className={`badge ${inc.secondary_category && CATEGORY_BADGES[inc.secondary_category] ? CATEGORY_BADGES[inc.secondary_category].class : 'badge-orange'}`} style={{ fontSize: "10px", padding: "2px 6px" }}>
@@ -677,7 +677,7 @@ export default function DashboardPage() {
               <div className="modal-id-row">
                 <div className="modal-id-box blotter-id-box">
                   <span className="modal-id-label">BLOTTER ID</span>
-                  <span className="modal-id-value">{formatBlotterId(selectedIncident, incidents.indexOf(selectedIncident), incidents.length)}</span>
+                  <span className="modal-id-value">{formatBlotterId(selectedIncident)}</span>
                 </div>
                 <div className="modal-id-box system-id-box">
                   <span className="modal-id-label">FIRESTORE REF</span>

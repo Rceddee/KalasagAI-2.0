@@ -566,8 +566,8 @@ export default function AnalyticsPage() {
       "Flagged Misclassified"
     ];
 
-    const rows = targetList.map((inc, idx) => {
-      const bId = formatBlotterId(inc, idx, total);
+    const rows = targetList.map((inc) => {
+      const bId = formatBlotterId(inc);
       const dateStr = inc.report_date?.seconds
         ? new Date(inc.report_date.seconds * 1000).toISOString()
         : (inc.created_at || "N/A");
@@ -609,10 +609,9 @@ export default function AnalyticsPage() {
   // Filtered incidents within the interactive breakdown modal
   const modalFilteredIncidents = useMemo(() => {
     if (!modalSearch.trim()) return modalIncidents;
-    const total = modalIncidents.length;
-    return modalIncidents.filter((inc, idx) => {
+    return modalIncidents.filter((inc) => {
       return (
-        matchIncidentId(inc, modalSearch, idx, total) ||
+        matchIncidentId(inc, modalSearch) ||
         (inc.reporter_name || "").toLowerCase().includes(modalSearch.toLowerCase()) ||
         (inc.incident_description || "").toLowerCase().includes(modalSearch.toLowerCase()) ||
         (inc.category || "").toLowerCase().includes(modalSearch.toLowerCase()) ||
@@ -946,9 +945,7 @@ export default function AnalyticsPage() {
                       </tr>
                     ) : (
                       modalFilteredIncidents.map((inc) => {
-                        const total = incidents.length;
-                        const idx = incidents.indexOf(inc);
-                        const blotterId = formatBlotterId(inc, idx, total);
+                        const blotterId = formatBlotterId(inc);
                         const badgeInfo = CATEGORY_BADGES[inc.category] || CATEGORY_BADGES["other disaster-related incidents"];
                         const statusClass = STATUS_CLASSES[inc.status] || "status-pending";
 
@@ -1031,7 +1028,7 @@ export default function AnalyticsPage() {
               <div className="modal-id-row">
                 <div className="modal-id-box blotter-id-box">
                   <span className="modal-id-label">BLOTTER ID</span>
-                  <span className="modal-id-value">{formatBlotterId(selectedIncident, incidents.indexOf(selectedIncident), incidents.length)}</span>
+                  <span className="modal-id-value">{formatBlotterId(selectedIncident)}</span>
                 </div>
                 <div className="modal-id-box system-id-box">
                   <span className="modal-id-label">FIRESTORE REF</span>

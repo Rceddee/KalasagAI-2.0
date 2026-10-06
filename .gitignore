@@ -25,6 +25,8 @@
 # Cloud Credentials & Service Accounts
 *-service-account*.json
 service-account*.json
+*serviceAccount*.json
+serviceAccountKey*.json
 credentials.json
 google-services.json
 GoogleService-Info.plist

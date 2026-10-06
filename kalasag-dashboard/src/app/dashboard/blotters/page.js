@@ -14,7 +14,7 @@ import {
 } from "@/components/Icons";
 import { useToast } from "@/components/Toast";
 import { useAuth, hasPermission } from "@/lib/auth-context";
-import { formatBlotterId, matchIncidentId } from "@/lib/id-helper";
+import { formatBlotterId, matchIncidentId, compareByIdNumber, extractIdNumber } from "@/lib/id-helper";
 
 const CATEGORY_BADGES = {
   "flooding": { class: "badge-blue", label: "Flooding" },
@@ -105,10 +105,9 @@ export default function BlottersPage() {
 
   // Filtered & Sorted incidents
   const filteredAndSorted = useMemo(() => {
-    const total = incidents.length;
-    const filtered = incidents.filter((inc, idx) => {
+    const filtered = incidents.filter((inc) => {
       const matchesSearch = 
-        matchIncidentId(inc, searchTerm, idx, total) ||
+        matchIncidentId(inc, searchTerm) ||
         (inc.reporter_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (inc.incident_description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (inc.category || "").toLowerCase().includes(searchTerm.toLowerCase());
@@ -121,22 +120,19 @@ export default function BlottersPage() {
     // Sort
     return [...filtered].sort((a, b) => {
       if (sortField === "blotter_id") {
-        const idxA = incidents.indexOf(a);
-        const idxB = incidents.indexOf(b);
-        const bIdA = formatBlotterId(a, idxA, total);
-        const bIdB = formatBlotterId(b, idxB, total);
-        return sortAsc ? bIdA.localeCompare(bIdB) : bIdB.localeCompare(bIdA);
+        // Numeric comparison on the ID number so BLOTTER 2 < BLOTTER 10
+        return compareByIdNumber(a, b, sortAsc);
+      }
+
+      // Handle firebase Timestamp object comparison
+      if (sortField === "report_date") {
+        const timeA = a.report_date?.seconds ? a.report_date.seconds * 1000 : (a.created_at ? new Date(a.created_at).getTime() : 0);
+        const timeB = b.report_date?.seconds ? b.report_date.seconds * 1000 : (b.created_at ? new Date(b.created_at).getTime() : 0);
+        return sortAsc ? timeA - timeB : timeB - timeA;
       }
 
       let valA = a[sortField];
       let valB = b[sortField];
-
-      // Handle firebase Timestamp object comparison
-      if (sortField === "report_date") {
-        const timeA = a.report_date?.seconds || new Date(a.report_date).getTime() || 0;
-        const timeB = b.report_date?.seconds || new Date(b.report_date).getTime() || 0;
-        return sortAsc ? timeA - timeB : timeB - timeA;
-      }
 
       // Convert to string safely
       valA = String(valA || "").toLowerCase();
@@ -223,7 +219,7 @@ export default function BlottersPage() {
     const status = inc.status || "Pending";
     const confidence = inc.confidence_score ? (inc.confidence_score * 100).toFixed(1) + "%" : "N/A";
 
-    const blotterId = formatBlotterId(inc, incidents.indexOf(inc), incidents.length);
+    const blotterId = formatBlotterId(inc);
 
     pdfDoc.setFontSize(18);
     pdfDoc.setFont("helvetica", "bold");
@@ -384,9 +380,7 @@ export default function BlottersPage() {
                   </tr>
                 ) : (
                   filteredAndSorted.map((inc) => {
-                    const total = incidents.length;
-                    const idx = incidents.indexOf(inc);
-                    const blotterId = formatBlotterId(inc, idx, total);
+                    const blotterId = formatBlotterId(inc);
 
                     const badgeClass = CATEGORY_BADGES[inc.category]?.class || "badge-green";
                     const badgeLabel = CATEGORY_BADGES[inc.category]?.label || "Other";
@@ -455,7 +449,7 @@ export default function BlottersPage() {
               <div className="modal-id-row">
                 <div className="modal-id-box blotter-id-box">
                   <span className="modal-id-label">BLOTTER ENTRY ID</span>
-                  <span className="modal-id-value">{formatBlotterId(selectedIncident, incidents.indexOf(selectedIncident), incidents.length)}</span>
+                  <span className="modal-id-value">{formatBlotterId(selectedIncident)}</span>
                 </div>
                 <div className="modal-id-box system-id-box">
                   <span className="modal-id-label">FIRESTORE REF</span>
