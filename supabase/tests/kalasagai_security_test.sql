@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(35);
+SELECT plan(37);
 
 SELECT ok(
   NOT has_table_privilege('anon', 'public.incidents', 'select')
@@ -103,6 +103,30 @@ SELECT throws_ok(
   '22023',
   NULL,
   'registration rejects accounts without a full name'
+);
+
+-- Reproduce Auth admin.createUser: the trusted app metadata arrives after INSERT.
+INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+VALUES ('31313131-3131-4131-8131-313131313131', 'invited-staff@example.test',
+  '{"provider":"email","providers":["email"]}', '{"full_name":"Invited Staff"}');
+UPDATE auth.users
+SET raw_app_meta_data = raw_app_meta_data || '{"account_type":"personnel","personnel_role":"super_admin"}'::jsonb
+WHERE id = '31313131-3131-4131-8131-313131313131';
+SET CONSTRAINTS auth.finalize_pending_auth_profile IMMEDIATE;
+SELECT is(
+  (SELECT role::text FROM public.profiles WHERE id = '31313131-3131-4131-8131-313131313131'),
+  'super_admin',
+  'a staff invitation provisions the trusted role without a resident phone number'
+);
+DELETE FROM auth.users WHERE id = '31313131-3131-4131-8131-313131313131';
+
+SELECT throws_ok(
+  $$INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES (
+    '31313131-3131-4131-8131-313131313132', 'resident-metadata@example.test',
+    '{"full_name":"Resident","account_type":"personnel","personnel_role":"super_admin"}'
+  )$$,
+  '22023', 'A contact number is required',
+  'user-supplied staff metadata does not exempt a resident from phone validation'
 );
 SELECT throws_ok(
   $$INSERT INTO auth.users (
