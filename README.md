@@ -7,15 +7,22 @@ KALASAG-AI is a resident and personnel incident-reporting and MDRRMO operations 
 | Application | Location | Purpose |
 | --- | --- | --- |
 | Resident web | [`apps/resident-web`](./apps/resident-web) | Account registration, resident and personnel incident submission and tracking, and profile management |
-| Personnel web | [`apps/personnel-web`](./apps/personnel-web) | Five role-filtered sidebar links: Maps and Reports, Incident Blotters, Analytics & Reports, Activity Logs, and Admin Controls; AI usage, report activity, and surge controls are nested under Admin Controls |
+| Personnel web | [`apps/personnel-web`](./apps/personnel-web) | Reports & Map, Incident Reports, Reports & Trends, Admin Controls, and Activity Log, filtered by role. AI usage and surge controls are under Admin Controls |
 | Shared validation | [`packages/shared-validation`](./packages/shared-validation) | Shared incident, status, and contact validation |
 | Supabase | [`supabase`](./supabase) | Database migration, RLS policies, storage rules, Edge Functions, and pgTAP security tests |
+
+## Capstone release
+
+Release `1395b08` is ready for the capstone demo. The public sign-in pages use the development backend. [Resident Web](https://kalasagai-resident-web.vercel.app/) · [Personnel Web](https://kalasag-ai-2-0.vercel.app/login)
+
+- [Feature inventory](./docs/KALASAGAI_FINAL_SYSTEM_SCOPE.md#current-web-features) covers seven modules, including resident receipts, personnel alerts, human review, exports, staff roles, and audit history.
+- [Demo walkthrough](./docs/KALASAGAI_CAPSTONE_DEMONSTRATION_GUIDE.md#current-web-walkthrough) follows an existing test report across both apps.
 
 ## Release documentation
 
 - [Web release report](./docs/KALASAGAI_WEB_RELEASE_REPORT.md) — current web verification results and release blockers.
 - [Deployment guide](./docs/KALASAGAI_DEPLOYMENT_GUIDE.md) — staged deployment, privacy checks, and go-live gates.
-- [Final deployment blockers](./docs/KALASAGAI_FINAL_DEPLOYMENT_BLOCKERS.md) — project-owner actions required before staging or release.
+- [Final deployment blockers](./docs/KALASAGAI_FINAL_DEPLOYMENT_BLOCKERS.md) — remaining live rehearsal checks and the separate operational production cutover.
 
 ## Security and operations
 
@@ -50,7 +57,7 @@ The resident and personnel applications run on their package-configured local po
 
 ## Supabase Cloud development
 
-This workspace is configured to use a dedicated Cloud development project through ignored local environment files. Its Cloud project reference and keys are intentionally not committed. `project_id = "kalasagai"` in `supabase/config.toml` is only the local CLI project name, not the Cloud project reference. Do not select or reuse production.
+This workspace is configured to use a dedicated Cloud development project through ignored local environment files. Credentials belong in ignored local environment files or hosted secret settings. `project_id = "kalasagai"` in `supabase/config.toml` is only the local CLI project name, not the Cloud project reference. Do not select or reuse production.
 
 The following setup steps are for a fresh checkout only. Do not create another project if a development project is already configured:
 
@@ -96,9 +103,9 @@ Create the ignored `supabase/functions/.env.local` file for local function setti
 
 Set `GEMINI_MODEL1` to `gemini-3.5-flash-lite` for GenerateContent JSON classification or `gemini-decision-1` for the Decisions API's typed category/priority answers. `GEMINI_MODEL` remains a supported legacy alias. Configure one model per deployment; for hosted projects, set it in that project's Edge Function secrets. Decision 1 stores its category and priority confidence summary as the assessment rationale; both model results remain suggestions for personnel review.
 
-The local Auth allow-list includes the resident web callback/reset URLs and Personnel Web's `http://localhost:3000/auth/callback`. Local Auth enforces passwords of at least eight characters; configure the matching Personnel Web callback in the hosted Supabase Auth redirect allow-list before sending hosted recovery links. Add the equivalent production redirect URLs before launch.
+The local Auth allow-list includes the resident web callback/reset URLs and Personnel Web's `http://localhost:3000/auth/callback`. Local Auth enforces passwords of at least eight characters; the [deployment guide](./docs/KALASAGAI_DEPLOYMENT_GUIDE.md#development-auth) lists the verified hosted callbacks for the capstone deployment.
 
-Personnel Web's Admin Controls lets admins invite responders and communication officers; only a Super Admin can invite Admins or Super Admins. Invitations use the role-checked `manage-personnel` Edge Function, which provisions accounts with the Admin `createUser` API so trusted `app_metadata` is present when the profile trigger runs. Supabase's `inviteUserByEmail` `data` option maps to user-controlled `user_metadata`, which this trigger deliberately does not trust for roles. The reset email is a recovery flow; the Personnel Web callback handles it at `/auth/callback` and routes to its password setup page. The development-only bootstrap helper is `scripts/bootstrap-development-super-admin.mjs`; it pins requests to the development project and never prints or stores the secret key. Do not run it until the separate hosted account-creation approval is granted.
+Personnel Web's Admin Controls lets admins invite responders and communication officers; only a Super Admin can invite Admins or Super Admins. Invitations use the role-checked `manage-personnel` Edge Function, which provisions accounts with the Admin `createUser` API and the deferred profile check reads the trusted role after Auth completes its metadata update. Supabase's `inviteUserByEmail` `data` option maps to user-controlled `user_metadata`, which this trigger deliberately does not trust for roles. The reset email is a recovery flow; the Personnel Web callback handles it at `/auth/callback` and routes to its password setup page. The development-only bootstrap helper is `scripts/bootstrap-development-super-admin.mjs`; it pins requests to the development project and never prints or stores the secret key. Do not run it until the separate hosted account-creation approval is granted.
 
 For local development only, create a resident account in the web app, then promote that account to the initial Super Admin using the local Supabase SQL editor as the database owner:
 
@@ -142,15 +149,15 @@ The GitHub Actions workflow runs npm tests, lint, type checks, a full npm audit,
 
 To build the web apps locally without sharing the `.next` output used by running development servers, set `NEXT_BUILD_DIST_DIR=build` for the build command. Normal Vercel builds use Next.js's default `.next` directory.
 
-### Current production gate — checked 2026-11-24: NO-GO
+### Operational production gate
 
-The production Supabase project exists and is active, but its eight recorded migrations do not overlap this checkout's earlier migration history; this checkout now has nine local migrations, including an unapplied AI assessment privacy migration. Its legacy schema (`incident_reports`, `status_history`, and related tables) and its `analyze-incident` function do not match the current development schema and functions (`classify-incident` and `manage-personnel`). The development project matches this checkout. Do not run the current migration chain with `supabase db push`, deploy the current functions directly, or create a replacement production project. No production writes or deployments were performed during this check.
+The November 24 read-only review identified incompatible legacy incident tables, migration history, and Edge Functions. Development has ten migrations, including the applied assessment privacy and staff invitation fixes. Operational cutover requires a separately approved, data-preserving plan.
 
 Before a production launch:
 
 1. Reconcile the existing production schema with a data-preserving, in-place compatibility migration. First take a verified backup and rehearse recovery. Keep legacy tables and records until mappings, application behavior, and rollback are validated; the current migration chain is not a production upgrade script.
 2. Resolve legacy-data mappings before cutover: multiple personnel roles versus the current single-role model, legacy incident statuses, account status, missing resident contact numbers, and richer AI/audit/job history. Preserve original values and hold ambiguous records for review.
-3. Configure separate Vercel projects for Resident Web and Personnel Web, with root directories `apps/resident-web` and `apps/personnel-web`. No local Vercel project links or production domains are configured in this checkout. Set only the production URL and publishable key in each app's environment; never put a secret/service-role key in a `NEXT_PUBLIC_*` variable.
+3. Verify production-specific environment assignments and exact Auth callback URLs before cutover. The two public capstone aliases currently use development. See the [existing projects and settings](./docs/KALASAGAI_DEPLOYMENT_GUIDE.md).
 4. Configure and verify production Auth URLs, SMTP, email confirmation, CAPTCHA, SSL enforcement, database network restrictions, RLS, backups/PITR, and function secrets. Deploy new Edge Functions only after the staged schema is validated; retain `analyze-incident` until legacy clients are retired. Keep Gemini disabled until production inference, cost limits, and alerting are explicitly approved.
 5. Confirm data-retention sign-off, production domains, email delivery, and rollback steps before enabling any deployment workflow. The repository has no production Vercel link, configured production client environment, or automatic deployment credentials.
 

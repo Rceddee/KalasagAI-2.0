@@ -1,33 +1,14 @@
-# KALASAG-AI Final Web Deployment Blockers
+# KALASAG-AI Deployment Gates
 
-**Checked:** 2026-11-24
-**Decision:** Keep Vercel deployments protected; do not make a public release yet.
+**November 25, 2026 · Release `1395b08`.** Both web apps are deployed and ready for a capstone walkthrough using the development backend. The owner approved public access to the two production sign-in pages. Preview deployments retain Vercel protection.
 
-## Status
+| Gate | Disposition |
+| --- | --- |
+| Web hosting and CI | Complete. Both Vercel deployments finished and all three release CI jobs passed. [Release evidence](KALASAGAI_WEB_RELEASE_REPORT.md) |
+| Development Auth | The Resident site URL, hosted callback paths, Personnel invitation origin, and Gmail SMTP settings were verified. The staff creation fix is applied. [Configuration](KALASAGAI_DEPLOYMENT_GUIDE.md#development-auth) |
+| Capstone rehearsal | Inbox delivery, recipient password setup and first sign-in, a fresh Gemini result, and audible playback on the presentation device remain open for live rehearsal. The existing test report supports a read-only demonstration. |
+| Operational production cutover | Separate owner approval, data mapping, verified backup and restore, RLS review, security-advisor follow-up, and a rollback plan are outstanding. The legacy schema requires a data-preserving compatibility migration. [Production gate](KALASAGAI_DEPLOYMENT_GUIDE.md#4-production-gate) |
 
-| Item | Status | Evidence |
-| --- | --- | --- |
-| Resident Web | **BLOCKED** | The requested separate project `kalasagai-resident-web` is not configured. |
-| Personnel Web | **STAGED (PROTECTED; INCOMPLETE)** | Existing project `kalasag-ai-2-0` deploys `apps/personnel-web`; backend target and server-only key are not verified. |
-| Resident Android | **REMOVED** | Native source/build project, Android-specific web download UI, CI job, and local deep-link configuration were removed at the owner's request. No APK is distributed. |
-| Backend privacy migration | **APPLIED TO DEV** | Explicitly authorized and applied to `ydyawyqhvdlllqrtuxko` as version `20261124122754`; hosted negative-access checks passed. |
-| Existing Vercel project | **PROTECTED** | `https://kalasag-ai-2-0.vercel.app/` and two deployment URLs return HTTP 302 to Vercel SSO for anonymous requests. |
-| Production | **BLOCKED** | Legacy schema is incompatible with this checkout; no production changes are authorized or performed. |
+## Earlier staging record
 
-## Owner actions required
-
-1. **Configure Resident Web:** Create `kalasagai-resident-web` with root `apps/resident-web`, development Supabase values, and **All Deployments** protection.
-2. **Finalize Personnel Web:** The existing project is already connected to `apps/personnel-web`; verify its public values point to development, add `SUPABASE_SECRET_KEY` server-side directly in Vercel, and decide whether to rename it to `kalasagai-personnel-web` or preserve its current project/domain.
-3. **Verify Auth redirects:** After app-specific domains exist, inspect the development Auth allow-list and configure exact callback/reset URLs. Test redirects only with an authorized account.
-4. **Review security advisories:** Check the remaining SECURITY DEFINER function notices and enable leaked-password protection before any public launch.
-5. **Keep production gated:** Commission a separate in-place, data-preserving production compatibility plan with verified backup/restore and separate approval. Never push this repository's current migration chain directly to the legacy production schema.
-
-## Exact local validation
-
-- `npm test`, typecheck, lint, both production builds, Edge Function tests/checks, and Supabase `test db`: passed in GitHub Actions run 5.
-- Local migration and cross-app integration scripts: passed.
-- Development privacy migration: applied; hosted negative-access checks passed.
-- Vercel: current Personnel deployment is protected; Resident project and app-specific Auth redirects remain unconfigured.
-- Production readiness: blocked.
-
-See the [web release report](./KALASAGAI_WEB_RELEASE_REPORT.md) and [deployment guide](./KALASAGAI_DEPLOYMENT_GUIDE.md) for evidence and procedures.
+On November 24, the initial Vercel setup had a protected Personnel deployment and a blocked Resident project-creation screen. The subsequent release completed both deployments. The [archived staging assessment](KALASAGAI_WEB_RELEASE_REPORT.md#archived-staging-assessment-of-november-24-2026) preserves the original blocker details.
