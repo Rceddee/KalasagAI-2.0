@@ -1,30 +1,34 @@
 # KALASAG-AI Final Web Deployment Blockers
 
 **Checked:** 2026-11-24
-**Decision:** Do not publish a public staging or production app yet.
+**Decision:** Keep Vercel deployments protected; do not make a public release yet.
 
 ## Status
 
 | Item | Status | Evidence |
 | --- | --- | --- |
-| Resident Web | **LOCAL** | Local production build passes; no Vercel link or staging URL. |
-| Personnel Web | **LOCAL** | Local production build passes; no Vercel link or staging URL. |
+| Resident Web | **BLOCKED** | The requested separate project `kalasagai-resident-web` is not configured. |
+| Personnel Web | **BLOCKED** | The requested separate project `kalasagai-personnel-web` is not configured. |
 | Resident Android | **REMOVED** | Native source/build project, Android-specific web download UI, CI job, and local deep-link configuration were removed at the owner's request. No APK is distributed. |
-| Backend privacy migration | **LOCAL ONLY** | Development migration history does not include `20261124094212_restrict_ai_assessment_rationale`. |
+| Backend privacy migration | **APPLIED TO DEV** | Explicitly authorized and applied to `ydyawyqhvdlllqrtuxko` as version `20261124122754`; hosted negative-access checks passed. |
+| Existing Vercel project | **PROTECTED** | Existing project `kalasag-ai-2-0` has production deployments; all deployment domains now require Vercel Authentication. |
 | Production | **BLOCKED** | Legacy schema is incompatible with this checkout; no production changes are authorized or performed. |
 
 ## Owner actions required
 
-1. **Authorize the backend migration:** Confirm in writing the exact development/staging project `ydyawyqhvdlllqrtuxko` and authorize applying `20261124094212_restrict_ai_assessment_rationale.sql` there. No hosted migration has been applied. Do not authorize or use production project `fpfvouirptlkvzjsobfz` for this change.
-2. **Verify the backend:** Provide a Docker/Supabase CLI environment to run the 14 pgTAP assertions, or an approved equivalent. Verify resident direct-table denial, safe owner-only RPC results, and staff rationale access before any public access.
-3. **Connect Vercel:** Sign in to the authorized Vercel team, then create or reuse exactly `kalasagai-resident-web` with root `apps/resident-web` and `kalasagai-personnel-web` with root `apps/personnel-web`. No CLI login or project link is available locally, so the existence of these projects in the Vercel account could not be verified. Record actual deployment URLs after authorized setup.
-4. **Approve staged Auth settings:** Once actual domains exist, authorize exact resident and personnel callback/reset URLs in the development/staging Supabase Auth allow-list. The current hosted allow-list and real email redirects have not been verified.
-5. **Keep production gated:** Commission a separate in-place, data-preserving production compatibility plan with verified backup/restore and separate approval. Never push this repository's current migration chain directly to the legacy production schema.
+1. **Pass database CI:** The latest workflow run still needs to pass the entire database and pgTAP jobs. The migration and pgTAP fixture fixes are on `main`; inspect the latest run before proceeding.
+2. **Configure the two Vercel apps:** Existing Vercel access is available in the browser. Create/configure `kalasagai-resident-web` with root `apps/resident-web` and `kalasagai-personnel-web` with root `apps/personnel-web`. Keep **All Deployments** protection enabled until the target backend and runtime behavior are verified. The current `kalasag-ai-2-0` project is not a substitute for these two app projects.
+3. **Set environment variables safely:** Use the development Supabase URL and publishable key in each client environment. Personnel Web also requires `SUPABASE_SECRET_KEY` server-side; add it directly in Vercel without exposing it through `NEXT_PUBLIC_*` or chat.
+4. **Verify Auth redirects:** After the app domains exist, inspect the development Auth allow-list and configure exact callback/reset URLs. Test redirects only with an authorized account.
+5. **Review security advisories:** Check the remaining SECURITY DEFINER function notices and enable leaked-password protection before any public launch.
+6. **Keep production gated:** Commission a separate in-place, data-preserving production compatibility plan with verified backup/restore and separate approval. Never push this repository's current migration chain directly to the legacy production schema.
 
 ## Exact local validation
 
 - `npm test`, `npm run typecheck`, `npm run lint`, and both production builds: passed.
 - `node scripts/test-migrations-local.mjs`: all 9 local migrations and functional runtime assertions passed.
-- Hosted development migration, pgTAP, Vercel staging, Auth redirects, and production readiness: not verified or not available.
+- Development privacy migration: applied and basic hosted access checks passed. Full pgTAP CI is not yet passing.
+- Vercel: current monorepo deployment is protected; separate app projects and Auth redirects remain unconfigured.
+- Production readiness: blocked.
 
 See the [web release report](./KALASAGAI_WEB_RELEASE_REPORT.md) and [deployment guide](./KALASAGAI_DEPLOYMENT_GUIDE.md) for evidence and procedures.

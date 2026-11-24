@@ -1,3 +1,4 @@
+-- Limit resident assessment access to the safe summary while preserving staff review.
 drop policy if exists "Residents and staff read authorized assessments"
   on public.ai_assessments;
 

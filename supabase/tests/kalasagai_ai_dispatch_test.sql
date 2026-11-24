@@ -1,6 +1,6 @@
 BEGIN;
 SET LOCAL search_path = public, extensions, net, pg_temp;
-SELECT plan(31);
+SELECT plan(30);
 
 SELECT ok(
   EXISTS (
@@ -112,10 +112,11 @@ SELECT vault.create_secret(
   'https://dispatch-test.supabase.co',
   'kalasagai_ai_dispatch_project_url'
 );
+CREATE TEMP TABLE ai_dispatch_test_anon_secret_id ON COMMIT DROP AS
 SELECT vault.create_secret(
   'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.fixture',
   'kalasagai_ai_dispatch_anon_jwt'
-);
+) AS id;
 SELECT vault.create_secret(
   'local-only-mocked-dispatch-secret-32-bytes',
   'kalasagai_ai_dispatch_hmac_key'
@@ -394,8 +395,12 @@ SELECT is((SELECT last_dispatch_error_code FROM app_private.ai_jobs WHERE last_d
   'http_401','gateway rejection retains its HTTP status for diagnosis');
 SELECT ok((SELECT status='complete' AND last_dispatch_http_status=200 FROM app_private.ai_jobs WHERE last_dispatch_request_id=9223372036854775002),
   'successful responses reconcile even after the assessment has completed');
-UPDATE vault.secrets SET name = 'test_original_anon_jwt' WHERE name = 'kalasagai_ai_dispatch_anon_jwt';
-SELECT vault.create_secret('sb_publishable_example','kalasagai_ai_dispatch_anon_jwt');
+SELECT vault.update_secret(
+  (SELECT id FROM ai_dispatch_test_anon_secret_id),
+  'sb_publishable_example',
+  'kalasagai_ai_dispatch_anon_jwt',
+  'Temporary invalid key fixture for a negative test'
+);
 UPDATE app_private.ai_jobs SET dispatch_attempts=0, next_dispatch_at=now(), last_dispatch_request_id=null
 WHERE incident_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 SELECT app_private.process_ai_job_dispatches();
