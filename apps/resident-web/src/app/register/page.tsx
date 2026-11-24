@@ -91,7 +91,7 @@ export default function RegisterPage() {
         email: trimmedEmail,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/report`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             full_name: trimmedName,
             contact_number: phone,
