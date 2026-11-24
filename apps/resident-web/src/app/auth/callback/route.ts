@@ -16,12 +16,13 @@ export async function GET(request: NextRequest) {
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
-      setAll: (cookiesToSet) => {
+      setAll: (cookiesToSet, headers) => {
+        for (const [name, value] of Object.entries(headers)) response.headers.set(name, value);
         cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },
   });
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return NextResponse.redirect(new URL("/?error=verification", request.url));
+  if (error) response.headers.set("Location", new URL("/?error=verification", request.url).href);
   return response;
 }
