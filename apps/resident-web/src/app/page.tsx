@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, type FormEvent } from "react";
+import React, { Suspense, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useResidentAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ThemeContext";
 import { getSupabase } from "@/lib/supabase";
@@ -14,6 +14,11 @@ import {
 } from "@/components/Icons";
 
 export default function SignInPage() {
+  return <Suspense><SignInForm /></Suspense>;
+}
+
+function SignInForm() {
+  const verificationFailed = useSearchParams().get("error") === "verification";
   const router = useRouter();
   const { user, loading } = useResidentAuth();
   const { theme, toggleTheme } = useTheme();
@@ -159,7 +164,7 @@ export default function SignInPage() {
           </div>
 
           {/* Feedback Banners */}
-          {error && (
+          {(error || verificationFailed) && (
             <div
               style={{
                 display: "flex",
@@ -174,7 +179,7 @@ export default function SignInPage() {
               }}
             >
               <AlertIcon size={16} color="var(--color-red)" />
-              <span>{error}</span>
+              <span role="alert">{error || "The verification link is invalid or expired. Open the latest email in the browser where you registered."}</span>
             </div>
           )}
 

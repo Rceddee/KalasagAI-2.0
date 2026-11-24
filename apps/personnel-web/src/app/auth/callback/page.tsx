@@ -11,7 +11,7 @@ export default function PersonnelAuthCallbackPage() {
 
   useEffect(() => {
     let active = true;
-    let unsubscribeAuthListener: (() => void) | null = null;
+
 
     async function completeAuthentication() {
       try {
@@ -22,20 +22,16 @@ export default function PersonnelAuthCallbackPage() {
         const accessToken = fragment.get("access_token");
         const refreshToken = fragment.get("refresh_token");
         let isRecovery = (callbackUrl.searchParams.get("type") || fragment.get("type")) === "recovery";
-
-        const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
-          if (event === "PASSWORD_RECOVERY") {
-            isRecovery = true;
-          }
-        });
-        unsubscribeAuthListener = () => authListener.subscription.unsubscribe();
-        if (!active) unsubscribeAuthListener();
+        if (!code && !(accessToken && refreshToken)) {
+          throw new Error("The authentication link is invalid or expired. Request a new one.");
+        }
 
         window.history.replaceState(window.history.state, "", callbackUrl.pathname);
 
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
+          isRecovery ||= "redirectType" in data && data.redirectType === "recovery";
         } else if (accessToken && refreshToken) {
           const { error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -64,10 +60,10 @@ export default function PersonnelAuthCallbackPage() {
       }
     }
 
-    void completeAuthentication();
+    // Strict Mode can restart the effect before the one-time code is consumed.
+    queueMicrotask(() => { if (active) void completeAuthentication(); });
     return () => {
       active = false;
-      unsubscribeAuthListener?.();
     };
   }, [router]);
 

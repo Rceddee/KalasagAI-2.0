@@ -26,33 +26,19 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = getSupabase();
-    const code = new URLSearchParams(window.location.search).get("code");
-
-    const recoverySubscription = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
-        setReady(true);
-      }
-    }).data.subscription;
-
-    if (code) {
-      void supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
-        if (exchangeError) {
-          setError("The password reset link is invalid or has expired. Please request a new link.");
-        } else {
-          setReady(true);
-        }
-      });
-    } else {
-      void supabase.auth.getSession().then(({ data, error: sessionError }) => {
-        if (sessionError) {
-          setError("Unable to validate the password recovery session.");
-        } else if (data.session) {
-          setReady(true);
-        }
-      });
+    let active = true;
+    // The resident browser client exchanges recovery codes during initialization.
+    async function validateSession() {
+      const { error: initializationError } = await supabase.auth.initialize();
+      if (initializationError) throw initializationError;
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !data.session) throw new Error("Missing recovery session");
+      if (active) setReady(true);
     }
-
-    return () => recoverySubscription.unsubscribe();
+    void validateSession().catch(() => {
+      if (active) setError("The password reset link is invalid or has expired. Please request a new link.");
+    });
+    return () => { active = false; };
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -75,8 +61,9 @@ export default function ResetPasswordPage() {
       const { error: updateError } = await getSupabase().auth.updateUser({ password });
       if (updateError) throw updateError;
 
+      const { error: signOutError } = await getSupabase().auth.signOut();
+      if (signOutError) throw new Error("Password updated. Please sign out to end your recovery session.");
       setMessage("Password successfully updated. You may now sign in with your new password.");
-      await getSupabase().auth.signOut();
       setTimeout(() => {
         router.replace("/");
       }, 2000);

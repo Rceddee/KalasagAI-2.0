@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { AlertIcon, MoonIcon, ShieldIcon, SunIcon } from "@/components/Icons";
 import { useTheme } from "@/components/ThemeContext";
+import { getPasswordRecoveryRedirectUrl } from "@/lib/auth-redirect";
 import { getSupabase } from "@/lib/supabase";
 
 export default function ForgotPasswordPage() {
@@ -21,7 +22,7 @@ export default function ForgotPasswordPage() {
     try {
       const { error: recoveryError } = await getSupabase().auth.resetPasswordForEmail(
         email.trim().toLowerCase(),
-        { redirectTo: `${window.location.origin}/auth/callback?type=recovery` },
+        { redirectTo: getPasswordRecoveryRedirectUrl(window.location.origin) },
       );
       if (recoveryError) throw recoveryError;
       setMessage("If an account exists for that email, a password setup link will be sent.");

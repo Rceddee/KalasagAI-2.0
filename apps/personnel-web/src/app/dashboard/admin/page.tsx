@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { getSupabase } from "@/lib/supabase";
+import { sendStaffRecoveryEmail } from "@/lib/auth-redirect";
 import { useToast } from "@/components/Toast";
 import AIVolumeSurgeControls from "@/components/AIVolumeSurgeControls";
 import type { PersonnelRole } from "@/lib/types";
@@ -184,9 +185,7 @@ export default function AdminPage() {
 
   const handleSendResetPassword = async (email: string) => {
     try {
-      const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await sendStaffRecoveryEmail(email, window.location.origin);
       if (error) throw error;
       toast.success(`Password reset link sent to ${email}`);
     } catch (err: unknown) {

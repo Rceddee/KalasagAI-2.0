@@ -11,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { User } from "@supabase/supabase-js";
+import { isAuthSessionMissingError, type User } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import { isInvalidAuthSessionError } from "@/lib/auth-session";
 import type { ResidentProfile } from "@/lib/types";
@@ -112,7 +112,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void supabase.auth.getUser().then(async ({ data, error: authError }) => {
       if (!active || authEventSeen) return;
       if (authError) {
-        if (isInvalidAuthSessionError(authError)) {
+        if (isAuthSessionMissingError(authError)) {
+          applyUser(null);
+        } else if (isInvalidAuthSessionError(authError)) {
           const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
           if (signOutError) {
             console.warn("Could not revoke the invalid resident session remotely:", signOutError);
