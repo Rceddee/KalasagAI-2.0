@@ -645,10 +645,9 @@ do $$
 declare
   v_job_id bigint;
 begin
-  perform cron.unschedule('kalasagai-ai-job-dispatch');
-
   -- Default-off scheduler: install job as inactive (active = false)
   -- to prevent unapproved automated replay of existing queued incidents.
+  -- cron.schedule replaces any existing job with the same name.
   v_job_id := cron.schedule(
     'kalasagai-ai-job-dispatch',
     '* * * * *',
