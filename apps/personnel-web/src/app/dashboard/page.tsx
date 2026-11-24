@@ -135,6 +135,15 @@ export default function DashboardPage() {
 
   const incidentDetailsRequest = useRef(0);
 
+  useEffect(() => {
+    if (!zoomPhoto) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setZoomPhoto(false);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [zoomPhoto]);
+
   // PST Clock
   useEffect(() => {
     const updateClock = () => {

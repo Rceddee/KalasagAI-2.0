@@ -16,22 +16,23 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<"light" | "dark">("dark");
+  const [themeInitialized, setThemeInitialized] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = (document.documentElement.getAttribute("data-theme") || localStorage.getItem("kalasag_theme")) as "light" | "dark" | null;
+    const savedTheme = localStorage.getItem("kalasag_theme");
+    queueMicrotask(() => {
       if (savedTheme === "light" || savedTheme === "dark") {
-        queueMicrotask(() => setThemeState(savedTheme));
+        setThemeState(savedTheme);
       }
-    }
+      setThemeInitialized(true);
+    });
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("kalasag_theme", theme);
-    }
-  }, [theme]);
+    if (!themeInitialized) return;
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("kalasag_theme", theme);
+  }, [theme, themeInitialized]);
 
   const setTheme = (newTheme: "light" | "dark") => {
     if (newTheme === "light" || newTheme === "dark") {
