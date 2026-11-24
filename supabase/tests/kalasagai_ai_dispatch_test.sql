@@ -1,6 +1,6 @@
 BEGIN;
 SET LOCAL search_path = public, extensions, net, pg_temp;
-SELECT plan(30);
+SELECT plan(31);
 
 SELECT ok(
   EXISTS (
@@ -59,8 +59,9 @@ SELECT ok(
 SELECT ok(
   NOT has_table_privilege('anon', 'vault.decrypted_secrets', 'select')
     AND NOT has_table_privilege('authenticated', 'vault.decrypted_secrets', 'select')
-    AND NOT has_table_privilege('service_role', 'vault.decrypted_secrets', 'select'),
-  'decrypted Vault secrets are not directly readable by API roles'
+    AND NOT has_table_privilege('anon', 'vault.secrets', 'select')
+    AND NOT has_table_privilege('authenticated', 'vault.secrets', 'select'),
+  'anonymous and authenticated roles cannot directly read Vault secrets'
 );
 
 DELETE FROM vault.secrets

@@ -2,8 +2,9 @@ create extension if not exists supabase_vault with schema vault;
 create extension if not exists pg_cron;
 create extension if not exists pgcrypto with schema extensions;
 
+-- Keep the privileged service_role server-only; revoke Vault access from client roles.
 revoke all on table vault.secrets, vault.decrypted_secrets
-  from public, anon, authenticated, service_role;
+  from public, anon, authenticated;
 
 alter table app_private.ai_jobs
   add column if not exists worker_token uuid,
