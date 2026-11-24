@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm audit
+      - run: npm test
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: node --check scripts/verify-full-integration.mjs
+      - name: Build web applications
+        run: |
+          npm run build --workspace @kalasag/personnel-web
+          npm run build --workspace @kalasag/resident-web
+        env:
+          NEXT_BUILD_DIST_DIR: build
+          NEXT_PUBLIC_SUPABASE_URL: https://ci.invalid
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+
+  edge-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.5.6
+      - run: deno test --no-lock --node-modules-dir=none --allow-env supabase/functions/classify-incident/index_test.ts supabase/functions/classify-incident/dispatch_test.ts supabase/functions/manage-personnel/index_test.ts
+      - run: deno check --no-lock --node-modules-dir=none supabase/functions/classify-incident/index.ts supabase/functions/manage-personnel/index.ts
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npx --yes supabase@3.1.0 start
+      - name: Install bootstrap routines in the isolated local database
+        run: |
+          db_container="$(docker ps --filter 'name=supabase_db_kalasagai' --format '{{.Names}}' | head -n 1)"
+          test -n "$db_container"
+          docker exec -i "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/install-bootstrap-procedure.sql
+      - run: npx --yes supabase@3.1.0 test db
+      - name: Stop local Supabase stack
+        if: always()
+        run: npx --yes supabase@3.1.0 stop

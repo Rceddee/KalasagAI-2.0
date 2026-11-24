@@ -1,0 +1,21 @@
+{
+  "name": "kalasagai-redevelopment",
+  "private": true,
+  "workspaces": [
+    "apps/personnel-web",
+    "apps/resident-web",
+    "packages/shared-validation"
+  ],
+  "scripts": {
+    "test": "npm run test --workspace @kalasag/shared-validation && npm run test --workspace @kalasag/personnel-web && npm run test --workspace @kalasag/resident-web",
+    "typecheck": "npm run typecheck --workspace @kalasag/personnel-web && npm run typecheck --workspace @kalasag/resident-web",
+    "lint": "npm run lint --workspace @kalasag/personnel-web && npm run lint --workspace @kalasag/resident-web",
+    "build": "npm run build --workspace @kalasag/personnel-web && npm run build --workspace @kalasag/resident-web"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.17",
+    "playwright": "^1.65.1",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
+  }
+}

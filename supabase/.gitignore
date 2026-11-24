@@ -1,0 +1,11 @@
+# Supabase
+.branches
+.temp
+
+# Local database snapshots may contain private records.
+backup_pre_activation.sql
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local
