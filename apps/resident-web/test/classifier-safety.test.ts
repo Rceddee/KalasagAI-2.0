@@ -20,8 +20,7 @@ test("local screening estimates never claim responders were dispatched", () => {
 });
 
 test("submission confirmation distinguishes receipt, review, and dispatch status", () => {
-  assert.match(REPORT_SUBMISSION_STATUS_MESSAGE, /Operational status: Received/i);
-  assert.match(REPORT_SUBMISSION_STATUS_MESSAGE, /preliminary suggestions for personnel review/i);
-  assert.match(REPORT_SUBMISSION_STATUS_MESSAGE, /No responder dispatch is confirmed/i);
+  assert.match(REPORT_SUBMISSION_STATUS_MESSAGE, /category and priority are awaiting personnel review/i);
+  assert.match(REPORT_SUBMISSION_STATUS_MESSAGE, /submission alone does not confirm responder dispatch/i);
   assert.doesNotMatch(REPORT_SUBMISSION_STATUS_MESSAGE, /\b(?:ambulance|fire truck|rescue team)\b.{0,30}\bdispatched\b/i);
 });

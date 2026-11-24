@@ -12,7 +12,6 @@ import {
 import { ResidentShell } from "@/components/ResidentShell";
 import { useResidentAuth } from "@/components/AuthProvider";
 import { getSupabase } from "@/lib/supabase";
-import { classifyWithSmartNLP, type ClassificationOutput } from "@/lib/classifier";
 import { REPORT_SUBMISSION_STATUS_MESSAGE } from "@/lib/report-messages";
 import { getIncidentEvidenceStoragePath, isDefinitiveSubmissionFailure } from "@/lib/report-submission";
 import { getLocationLimitStatus } from "@/lib/boundary-helper";
@@ -57,7 +56,6 @@ interface PendingSubmissionAttempt {
   latitude: number;
   longitude: number;
   photo: File;
-  classification: ClassificationOutput;
   submissionAttempted: boolean;
 }
 
@@ -89,10 +87,6 @@ export default function ReportPage() {
   const [submittedResult, setSubmittedResult] = useState<{
     residentId: string;
     reference: string;
-    category: string;
-    priority: string;
-    confidence: number;
-    reasoning: string;
   } | null>(null);
 
   const previewUrlRef = useRef<string | null>(null);
@@ -304,7 +298,6 @@ export default function ReportPage() {
           latitude: coords[0],
           longitude: coords[1],
           photo,
-          classification: classifyWithSmartNLP(description),
           submissionAttempted: false,
         };
       };
@@ -398,10 +391,6 @@ export default function ReportPage() {
       setSubmittedResult({
         residentId: attempt.residentId,
         reference,
-        category: attempt.classification.category,
-        priority: attempt.classification.priority_level,
-        confidence: Math.round(attempt.classification.confidence_score * 100),
-        reasoning: attempt.classification.reasoning,
       });
 
       // Automatically trigger backend operations AI classification for the blotter record
@@ -909,7 +898,6 @@ export default function ReportPage() {
         )}
       </div>
 
-      {/* Success Modal with AI Assessment */}
       {successModalOpen && submittedResult && submittedResult.residentId === user?.id && (
         <div className="resident-modal-backdrop" onClick={() => setSuccessModalOpen(false)}>
           <div className="resident-modal-card" onClick={(e) => e.stopPropagation()}>
@@ -918,10 +906,10 @@ export default function ReportPage() {
                 <CheckIcon size={28} />
               </div>
               <h2 style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-primary)" }}>
-                Emergency Report Submitted
+                Report received
               </h2>
               <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
-                Your report has been received by MDRRMO Gumaca Operations Center.
+                MDRRMO Gumaca Operations Center received your report.
               </p>
               <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "8px", lineHeight: "1.5" }}>
                 {REPORT_SUBMISSION_STATUS_MESSAGE}
@@ -929,39 +917,10 @@ export default function ReportPage() {
             </div>
 
             <div style={{ background: "var(--bg-tertiary)", borderRadius: "12px", padding: "14px", marginBottom: "16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Reference ID:</span>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Report reference</span>
                 <strong style={{ fontSize: "13px", color: "var(--color-blue)" }}>{submittedResult.reference}</strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Initial category estimate:</span>
-                <strong style={{ fontSize: "13px", color: "var(--text-primary)", textTransform: "uppercase" }}>{submittedResult.category}</strong>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Preliminary priority:</span>
-                <span style={{ fontSize: "12px", fontWeight: "800", color: submittedResult.priority === "High" ? "var(--color-red)" : "var(--color-yellow)" }}>
-                  {submittedResult.priority.toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "4px" }}>
-                  <span style={{ color: "var(--text-muted)" }}>Local screening confidence:</span>
-                  <strong style={{ color: "var(--text-primary)" }}>{submittedResult.confidence}%</strong>
-                </div>
-                <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ width: `${submittedResult.confidence}%`, height: "100%", background: "var(--color-blue)", borderRadius: "3px" }}></div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: "20px" }}>
-              <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Initial screening estimate:</span>
-              <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px", lineHeight: "1.5" }}>
-                {submittedResult.reasoning}
-              </p>
-              <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.5" }}>
-                This local estimate is preliminary. If enabled, operations AI separately suggests a category and priority for personnel to verify or correct.
-              </p>
             </div>
 
             <div style={{ display: "flex", gap: "10px" }}>
