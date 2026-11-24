@@ -10,8 +10,9 @@ The native Resident Android project and its APK distribution path have been remo
 - The development Supabase project `ydyawyqhvdlllqrtuxko` (`kalasagai-dev`) is active and healthy. The AI assessment privacy migration is applied and recorded as `20261124122754`.
 - No production migration, function, secret, or credential was changed.
 - The Android redirect was removed from the local Supabase config only. Hosted Auth allow-lists and ignored local environment files were not changed.
-- Existing Vercel project `kalasag-ai-2-0` has production deployments; Vercel Authentication is enabled for **All Deployments**. Anonymous requests to its observed deployment URLs returned HTTP 302.
-- The two requested projects (`kalasagai-resident-web` and `kalasagai-personnel-web`) are not yet configured. Vercel CLI and local project links remain unavailable.
+- Existing Vercel project `kalasag-ai-2-0` is connected to `apps/personnel-web`. Its production alias `https://kalasag-ai-2-0.vercel.app/` and two deployment-specific URLs return HTTP 302 to Vercel SSO for anonymous requests.
+- The requested Resident project is not configured. The existing Personnel project has the two public Supabase variable names, but their values were not verified and `SUPABASE_SECRET_KEY` was not visible. Vercel CLI and local project links remain unavailable.
+- GitHub Actions run 5 passed web, Edge Function, and database jobs, including both Next.js builds and the full pgTAP suite.
 - Production Supabase is a legacy project incompatible with the current schema. **Never push the current migration chain directly to production.**
 
 ## 1. Authorize and verify the backend first
@@ -19,7 +20,7 @@ The native Resident Android project and its APK distribution path have been remo
 Do not deploy a publicly accessible incident-reporting application to a backend where the confirmed assessment exposure remains unresolved.
 
 1. The privacy migration has been applied to development as version `20261124122754`; do not apply it to production.
-2. Run the latest GitHub Actions database job and require all pgTAP tests to pass before deployment. The local PGlite migration and runtime checks pass, but CI has exposed issues in the SQL fixture that are being corrected.
+2. The latest GitHub Actions run passed `supabase test db`, all web checks/builds, and Edge Function tests/checks. Keep this as the CI gate for subsequent code changes.
 3. Verify that direct resident table reads expose no assessment rows, `my_ai_assessments` returns only latest safe fields for owned reports, and authorized staff can read the latest rationale through the staff-gated RPC. The hosted negative-access checks passed; local functional tests cover owner-safe and staff access.
 4. Review the development project's Supabase Security Advisor notices before public use: callable `SECURITY DEFINER` RPCs, disabled leaked-password protection, and informational private-schema RLS notices.
 5. Configure and verify the exact staged Auth site URL, resident email-confirmation and password-reset redirects, personnel recovery callback, email delivery, and CAPTCHA. Do not guess or add placeholder URLs to a hosted allow-list.
@@ -28,9 +29,9 @@ The production project requires a separate data-preserving compatibility plan, v
 
 ## 2. Connect the two Vercel monorepo projects
 
-The Vercel dashboard is accessible, but only the existing `kalasag-ai-2-0` monorepo project was found. Its production deployments are protected by Vercel Authentication for all domains. Create/configure the two app projects before releasing:
+The Vercel dashboard is accessible, but the only existing project found is `kalasag-ai-2-0`, connected to `apps/personnel-web`. It is protected by Vercel Authentication for all domains. Keep it protected while configuring the requested projects:
 
-1. Import the repository once for each application and create/reuse projects named `kalasagai-resident-web` and `kalasagai-personnel-web`.
+1. Create/reuse `kalasagai-resident-web` for Resident Web. For Personnel Web, verify whether to rename the existing `kalasag-ai-2-0` project to `kalasagai-personnel-web` or create a separate project while preserving the existing protected domain.
 2. Set **Root Directory** to `apps/resident-web` for Resident Web and `apps/personnel-web` for Personnel Web. Keep the framework as Next.js. The root npm workspace lockfile and shared package must remain available to each build.
 3. Use the repository root workspace installation and the corresponding workspace build command if Vercel's defaults do not correctly detect the monorepo:
 
