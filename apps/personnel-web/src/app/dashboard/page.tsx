@@ -12,8 +12,6 @@ import {
   PinIcon,
   ClockIcon,
   InboxIcon,
-  VolumeIcon,
-  VolumeMuteIcon,
   CloseIcon,
   CheckIcon,
   ClipboardIcon,
@@ -134,9 +132,7 @@ export default function DashboardPage() {
   const [requestingAi, setRequestingAi] = useState(false);
 
   const [currentTime, setCurrentTime] = useState("");
-  const [alertMuted, setAlertMuted] = useState(false);
 
-  const isInitialLoad = useRef(true);
   const incidentDetailsRequest = useRef(0);
 
   // PST Clock
@@ -156,40 +152,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Web Audio Alert Sound
-  const playAlertSound = useCallback((priority: IncidentPriority | null) => {
-    if (typeof window === "undefined" || alertMuted) return;
-    try {
-      const audioWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
-      const AudioCtx = window.AudioContext || audioWindow.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      if (priority === "high") {
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(660, ctx.currentTime);
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        osc.start();
-        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-        osc.stop(ctx.currentTime + 0.4);
-      } else {
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-        osc.stop(ctx.currentTime + 0.2);
-      }
-    } catch (err) {
-      console.warn("Audio playback error:", err);
-    }
-  }, [alertMuted]);
-
   // Load Incidents
   const loadIncidents = useCallback(async () => {
     try {
@@ -208,26 +170,16 @@ export default function DashboardPage() {
         };
       });
 
-      if (!isInitialLoad.current && mapped.length > incidents.length) {
-        const newOnes = mapped.slice(0, mapped.length - incidents.length);
-        const newest = newOnes[0];
-        if (newest) {
-          playAlertSound(newest.priority_level);
-          toast.warning(`New Incident: ${newest.reference} - ${(newest.category || "").toUpperCase()}`);
-        }
-      }
-
       setIncidents(mapped);
       setModalIncident((current) => {
         if (!current) return current;
         return mapped.find((incident) => incident.id === current.id) ?? current;
       });
-      isInitialLoad.current = false;
     } catch (err) {
       console.error("Failed to load incidents:", err);
       toast.error("Failed to load live incident reports.");
     }
-  }, [incidents.length, playAlertSound, toast]);
+  }, [toast]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -544,17 +496,6 @@ export default function DashboardPage() {
               <span>{stats.total} Total reports</span>
             </div>
           </div>
-
-          <button
-            className={`btn btn-google ${alertMuted ? "muted" : ""}`}
-            onClick={() => setAlertMuted((prev) => !prev)}
-            type="button"
-            style={{ width: "auto", padding: "8px 12px", fontSize: "15px", gap: "6px", whiteSpace: "nowrap" }}
-            title={alertMuted ? "Turn emergency alert sound on" : "Turn emergency alert sound off"}
-          >
-            {alertMuted ? <VolumeMuteIcon size={14} /> : <VolumeIcon size={14} />}
-            <span>{alertMuted ? "Unmute sound" : "Mute sound"}</span>
-          </button>
 
           <details className="header-more-menu">
             <summary

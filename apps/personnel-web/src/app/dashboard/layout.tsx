@@ -13,6 +13,7 @@ import {
   SunIcon,
   MoonIcon,
 } from "@/components/Icons";
+import { ReportAlerts } from "@/components/ReportAlerts";
 import { DashboardAuthProvider } from "@/components/DashboardAuth";
 import { useTheme } from "@/components/ThemeContext";
 import { getSupabase } from "@/lib/supabase";
@@ -234,6 +235,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <div className="sidebar-footer">
+          <ReportAlerts />
           <button
             className="btn btn-google"
             onClick={toggleTheme}

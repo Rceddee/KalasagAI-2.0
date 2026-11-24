@@ -5833,3 +5833,34 @@ th[style*="cursor: pointer"]:hover {
     gap: 8px;
   }
 }
+.report-sound-toggle {
+  gap: 8px;
+  min-height: 40px;
+}
+.new-report-notice {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 12px 16px;
+  border: 1px solid var(--color-orange);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+}
+.new-report-notice a { color: var(--text-info); }
+.new-report-notice button {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
