@@ -146,6 +146,30 @@ async function runCrossAppIntegration() {
     END;
     $$;
 
+    CREATE OR REPLACE FUNCTION cron.unschedule(p_jobname text)
+    RETURNS boolean LANGUAGE plpgsql AS $$
+    BEGIN
+      DELETE FROM cron.job WHERE jobname = p_jobname;
+      RETURN FOUND;
+    END;
+    $$;
+
+    CREATE OR REPLACE FUNCTION cron.alter_job(
+      job_id bigint,
+      schedule text DEFAULT NULL,
+      command text DEFAULT NULL,
+      database text DEFAULT NULL,
+      username text DEFAULT NULL,
+      active boolean DEFAULT NULL
+    )
+    RETURNS void LANGUAGE plpgsql AS $$
+    BEGIN
+      UPDATE cron.job AS job
+      SET active = COALESCE($6, job.active)
+      WHERE job.jobid = $1;
+    END;
+    $$;
+
     CREATE OR REPLACE FUNCTION extensions.hmac(data bytea, key bytea, type text)
     RETURNS bytea LANGUAGE plpgsql AS $$
     BEGIN
@@ -188,6 +212,14 @@ async function runCrossAppIntegration() {
     await db.exec(sanitized);
   }
   console.log(`[SCHEMA] Applied all ${migrationFiles.length} migrations successfully.`);
+
+  const dispatcherJob = await db.query(
+    "SELECT active FROM cron.job WHERE jobname = 'kalasagai-ai-job-dispatch';",
+  );
+  if (dispatcherJob.rows.length !== 1 || dispatcherJob.rows[0].active !== false) {
+    throw new Error("The AI dispatcher cron job must be installed as inactive");
+  }
+  console.log("[SCHEMA] AI dispatcher scheduler is installed inactive.");
 
   // Provision Vault secrets for AI dispatch
   await db.exec(`

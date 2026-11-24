@@ -1,6 +1,16 @@
 BEGIN;
 SET LOCAL search_path = public, extensions, net, pg_temp;
-SELECT plan(30);
+SELECT plan(31);
+
+SELECT ok(
+  EXISTS (
+    SELECT 1
+    FROM cron.job
+    WHERE jobname = 'kalasagai-ai-job-dispatch'
+      AND active = false
+  ),
+  'AI dispatcher cron job is installed but remains inactive'
+);
 
 SELECT ok(
   NOT has_function_privilege(

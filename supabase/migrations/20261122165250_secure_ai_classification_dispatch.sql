@@ -645,22 +645,16 @@ do $$
 declare
   v_job_id bigint;
 begin
-  for v_job_id in
-    select jobid from cron.job where jobname = 'kalasagai-ai-job-dispatch'
-  loop
-    perform cron.unschedule(v_job_id);
-  end loop;
+  perform cron.unschedule('kalasagai-ai-job-dispatch');
 
   -- Default-off scheduler: install job as inactive (active = false)
   -- to prevent unapproved automated replay of existing queued incidents.
-  perform cron.schedule(
+  v_job_id := cron.schedule(
     'kalasagai-ai-job-dispatch',
     '* * * * *',
     'select app_private.process_ai_job_dispatches();'
   );
 
-  update cron.job
-  set active = false
-  where jobname = 'kalasagai-ai-job-dispatch';
+  perform cron.alter_job(job_id := v_job_id, active := false);
 end;
 $$;
