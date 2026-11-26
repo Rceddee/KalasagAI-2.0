@@ -239,23 +239,23 @@ Deno.test("classification stores only a server-side suggestion for authorized pe
 
     actorRole = "responder";
     const ownResponderReportResponse = await callHandler();
-    assert.equal(ownResponderReportResponse.status, 200);
-    assert.equal(providerCalls, providerCallsBeforeUnauthorizedRequest + 1);
+    assert.equal(ownResponderReportResponse.status, 403);
+    assert.equal(providerCalls, providerCallsBeforeUnauthorizedRequest);
 
     incidentOwnerId = "22222222-2222-4222-8222-222222222222";
     const otherResponderReportResponse = await callHandler();
     assert.equal(otherResponderReportResponse.status, 403);
-    assert.equal(providerCalls, providerCallsBeforeUnauthorizedRequest + 1);
+    assert.equal(providerCalls, providerCallsBeforeUnauthorizedRequest);
 
     actorRole = "resident";
     const otherResidentResponse = await callHandler();
     assert.equal(otherResidentResponse.status, 403);
-    assert.equal(providerCalls, providerCallsBeforeUnauthorizedRequest + 1);
+    assert.equal(providerCalls, providerCallsBeforeUnauthorizedRequest);
 
     incidentOwnerId = "11111111-1111-4111-8111-111111111111";
     const ownReportResponse = await callHandler();
     assert.equal(ownReportResponse.status, 200);
-    assert.equal(providerCalls, providerCallsBeforeUnauthorizedRequest + 2);
+    assert.equal(providerCalls, providerCallsBeforeUnauthorizedRequest + 1);
     const residentAssessmentRequest = requests
       .filter(({ path }) => path === "/rest/v1/rpc/record_claimed_ai_assessment")
       .at(-1)?.body as { p_actor_id?: string } | undefined;

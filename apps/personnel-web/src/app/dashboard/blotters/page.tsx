@@ -1,4 +1,7 @@
 "use client";
+import { canTransitionIncidentStatus } from "@kalasag/shared-validation";
+import { useDashboardAuth } from "@/components/DashboardAuth";
+import { canManageIncidents } from "@/lib/role-access";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
@@ -53,6 +56,7 @@ function priorityBadgeClass(priority: IncidentRecord["priority_level"]) {
 const PAGE_SIZE = 25;
 
 export default function BlottersPage() {
+  const canManage = canManageIncidents(useDashboardAuth().role);
   const toast = useToast();
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,7 +222,7 @@ export default function BlottersPage() {
   }, []);
 
   const handleUpdateStatus = async () => {
-    if (!selectedIncident || !statusUpdate) return;
+    if (!canManage || !selectedIncident || !canTransitionIncidentStatus(selectedIncident.status, statusUpdate)) return;
     setUpdating(true);
     try {
       const { error } = await getSupabase().rpc("update_incident_status", {
@@ -238,7 +242,7 @@ export default function BlottersPage() {
   };
 
   const handleRequestAi = async () => {
-    if (!selectedIncident) return;
+    if (!canManage || !selectedIncident) return;
     setRequestingAi(true);
     try {
       const { error } = await getSupabase().functions.invoke("classify-incident", {
@@ -719,7 +723,7 @@ export default function BlottersPage() {
                       This suggestion does not approve the report or dispatch a response. Personnel should check the category and priority.
                     </p>
                   </div>
-                  {!selectedIncident.suggested_category && (
+                  {canManage && !selectedIncident.suggested_category && (
                     <button
                       className="btn btn-google"
                       onClick={() => void handleRequestAi()}
@@ -767,7 +771,7 @@ export default function BlottersPage() {
 
             <div className="modal-footer" style={{ flexDirection: "column", gap: "12px", alignItems: "stretch" }}>
               {/* Status note */}
-              <div>
+              {canManage && selectedIncident.status !== "closed" && <div>
                 <label style={{ fontSize: "14px", color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
                   Note about the status change (optional)
                 </label>
@@ -780,20 +784,19 @@ export default function BlottersPage() {
                   maxLength={500}
                   style={{ width: "100%", fontSize: "16px", padding: "8px 12px" }}
                 />
-              </div>
+              </div>}
 
               <div style={{ display: "flex", gap: "10px", justifyContent: "space-between", flexWrap: "wrap" }}>
-                <div style={{ display: "flex", gap: "10px", flex: 1, flexWrap: "wrap" }}>
+                {canManage && selectedIncident.status !== "closed" && <div style={{ display: "flex", gap: "10px", flex: 1, flexWrap: "wrap" }}>
                   <select
                     className="select-status"
                     value={statusUpdate}
                     onChange={(e) => setStatusUpdate(e.target.value as IncidentStatus)}
                     disabled={updating}
                   >
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
+                    {(["pending", "in_progress", "resolved", "closed"] as const)
+                      .filter(next => next === selectedIncident.status || canTransitionIncidentStatus(selectedIncident.status, next))
+                      .map(next => <option key={next} value={next}>{next === "in_progress" ? "In Progress" : next[0].toUpperCase() + next.slice(1)}</option>)}
                   </select>
                   <button
                     className="btn btn-primary"
@@ -804,7 +807,7 @@ export default function BlottersPage() {
                   >
                     {updating ? "Updating…" : "Update Status"}
                   </button>
-                </div>
+                </div>}
 
                 <div style={{ display: "flex", gap: "8px" }}>
                   <Link

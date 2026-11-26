@@ -130,7 +130,11 @@ export default function ReportPage() {
         const lng = pos.coords.longitude;
         handleLocationChange(lat, lng);
         setLocLoading(false);
-        const limitStatus = getLocationLimitStatus(lat, lng);
+        if (profile?.role === "responder") {
+    return <ResidentShell><p role="status">Your Responder account has read-only access to incident reports.</p></ResidentShell>;
+  }
+
+  const limitStatus = getLocationLimitStatus(lat, lng);
         toast.info(`GPS Acquired: ${limitStatus.badge}`);
       },
       (err) => {

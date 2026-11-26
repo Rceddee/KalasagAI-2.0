@@ -1,4 +1,5 @@
 "use client";
+import { canManageIncidents } from "@/lib/role-access";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -66,7 +67,7 @@ export default function BlotterDetailsPage() {
 function IncidentRecordView({ id }: { id: string }) {
   const requestVersion = useRef(0);
   const { role } = useDashboardAuth();
-  const canManage = role === "communication_officer" || role === "admin" || role === "super_admin";
+  const canManage = canManageIncidents(role);
   const [incident, setIncident] = useState<IncidentRecord | null>(null);
   const [history, setHistory] = useState<StatusHistoryRecord[]>([]);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
@@ -191,7 +192,7 @@ function IncidentRecordView({ id }: { id: string }) {
   }, [id, load]);
 
   async function updateStatus(next: IncidentStatus) {
-    if (!incident || !canTransitionIncidentStatus(incident.status, next)) return;
+    if (!canManage || !incident || !canTransitionIncidentStatus(incident.status, next)) return;
     setBusy(true);
     setError("");
     setMessage("");

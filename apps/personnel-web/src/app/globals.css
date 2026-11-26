@@ -5855,6 +5855,26 @@ th[style*="cursor: pointer"]:hover {
   box-shadow: var(--shadow-md);
 }
 .new-report-notice a { color: var(--text-info); }
+@media (max-width: 900px) {
+  #dashboard-app-layout { height: 100dvh; }
+  #dashboard-sidebar { width: 56px; flex-basis: 56px; padding: 12px 4px; }
+  #dashboard-sidebar .sidebar-brand-row { margin-bottom: 12px; justify-content: center; }
+  #dashboard-sidebar .sidebar-brand-copy,
+  #dashboard-sidebar .sidebar-collapse-toggle,
+  #dashboard-sidebar .sidebar-action-label,
+  #dashboard-sidebar .user-info,
+  #dashboard-sidebar .nav-item > span:not(.nav-icon) { display: none; }
+  #dashboard-sidebar .nav-item,
+  #dashboard-sidebar .user-profile,
+  #dashboard-sidebar .sidebar-footer button {
+    width: 100%; min-height: 44px; justify-content: center; padding: 6px;
+  }
+  #dashboard-sidebar .sidebar-signout-icon { display: block; }
+  #dashboard-main-shell { min-height: 0; overflow-y: auto; }
+  #dashboard-workspace { flex: 1 0 auto; flex-direction: column; overflow: visible; }
+  #map-section { flex: none; height: clamp(220px, 42dvh, 460px); width: 100%; }
+  #incident-feed-panel { width: 100%; height: auto; border-left: 0; }
+}
 .new-report-notice button {
   display: inline-flex;
   align-items: center;

@@ -1,4 +1,7 @@
 "use client";
+import { canTransitionIncidentStatus } from "@kalasag/shared-validation";
+import { useDashboardAuth } from "@/components/DashboardAuth";
+import { canManageIncidents } from "@/lib/role-access";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
@@ -102,6 +105,7 @@ function priorityBadgeClass(priority: IncidentPriority | null) {
 }
 
 export default function DashboardPage() {
+  const canManage = canManageIncidents(useDashboardAuth().role);
   const toast = useToast();
 
   const [incidents, setIncidents] = useState<IncidentMapRecord[]>([]);
@@ -281,7 +285,7 @@ export default function DashboardPage() {
     }
 
     // 3. Auto-request AI classification in the background if unclassified
-    if (!incident.suggested_category && !incident.confirmed_category) {
+    if (canManage && !incident.suggested_category && !incident.confirmed_category) {
       void supabase.functions.invoke("classify-incident", {
         body: { incidentId: incident.id },
       }).then((res) => {
@@ -313,7 +317,7 @@ export default function DashboardPage() {
 
   // Status update
   const handleUpdateStatus = async () => {
-    if (!modalIncident || !statusUpdate) return;
+    if (!canManage || !modalIncident || !canTransitionIncidentStatus(modalIncident.status, statusUpdate)) return;
     setUpdatingStatus(true);
     try {
       const { error } = await getSupabase().rpc("update_incident_status", {
@@ -336,7 +340,7 @@ export default function DashboardPage() {
 
   // Review and confirm incident classification as authorized staff
   const handleReviewClassification = async () => {
-    if (!modalIncident || !reviewCategory || !reviewPriority) return;
+    if (!canManage || !modalIncident || !reviewCategory || !reviewPriority) return;
     setReclassifying(true);
     try {
       const { error } = await getSupabase().rpc("review_incident_classification", {
@@ -368,7 +372,7 @@ export default function DashboardPage() {
 
   // Request on-demand AI classification if automatic suggestion is pending
   const handleRequestAiClassification = async () => {
-    if (!modalIncident) return;
+    if (!canManage || !modalIncident) return;
     setRequestingAi(true);
     try {
       const { error } = await getSupabase().functions.invoke("classify-incident", {
@@ -713,7 +717,7 @@ export default function DashboardPage() {
                 </span>
                 <h3>Report details</h3>
               </div>
-              <button className="btn-close" onClick={closeIncidentModal} type="button">
+              <button className="btn-close" aria-label="Close report details" onClick={closeIncidentModal} type="button">
                 <CloseIcon size={20} />
               </button>
             </div>
@@ -750,7 +754,7 @@ export default function DashboardPage() {
                   <h4>AI-suggested priority</h4>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
                     <p style={{ margin: 0 }}>{priorityLabel(modalIncident.suggested_priority)}</p>
-                    {!modalIncident.suggested_category && (
+                    {canManage && !modalIncident.suggested_category && (
                       <button
                         type="button"
                         className="btn btn-google"
@@ -877,7 +881,7 @@ export default function DashboardPage() {
               )}
 
               {/* Classification Review */}
-              <div className="classification-details">
+              {canManage && <div className="classification-details">
                 <div className="detail-block">
                   <h4>Review the AI suggestion</h4>
                   <p>Check or correct the category and priority, then save your review.</p>
@@ -924,7 +928,7 @@ export default function DashboardPage() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </div>}
             </div>
 
             {/* Footer with Operational Status Update & Blotter PDF */}
@@ -946,17 +950,16 @@ export default function DashboardPage() {
                 <span>Download report PDF</span>
               </button>
 
-              <div className="status-controls">
+              {canManage && modalIncident.status !== "closed" && <div className="status-controls">
                 <select
                   className="select-status"
                   value={statusUpdate}
                   onChange={(e) => setStatusUpdate(e.target.value as IncidentStatus)}
                   disabled={updatingStatus}
                 >
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
+                  {(["pending", "in_progress", "resolved", "closed"] as const)
+                      .filter(next => next === modalIncident.status || canTransitionIncidentStatus(modalIncident.status, next))
+                      .map(next => <option key={next} value={next}>{next === "in_progress" ? "In Progress" : next[0].toUpperCase() + next.slice(1)}</option>)}
                 </select>
                 <button
                   type="button"
@@ -967,7 +970,7 @@ export default function DashboardPage() {
                 >
                   {updatingStatus ? "Updating…" : "Update Status"}
                 </button>
-              </div>
+              </div>}
             </div>
           </div>
         </div>

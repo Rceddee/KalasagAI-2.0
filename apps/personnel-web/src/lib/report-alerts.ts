@@ -64,10 +64,12 @@ export function listenForNewReports(client: SupabaseClient, notify: (reports: Re
     .subscribe((status) => { if (status === "SUBSCRIBED") void catchUp(); });
   const timer = window.setInterval(catchUp, 20000);
   window.addEventListener("focus", catchUp);
+  window.addEventListener("online", catchUp);
   return () => {
     abort.abort();
     window.clearInterval(timer);
     window.removeEventListener("focus", catchUp);
+    window.removeEventListener("online", catchUp);
     void client.removeChannel(channel);
   };
 }

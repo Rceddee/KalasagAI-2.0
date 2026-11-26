@@ -69,9 +69,9 @@ SELECT throws_ok(
       122.1005,
       ARRAY[]::text[]
     )$$,
-  '22023',
-  'Between one and five unique evidence photos are required',
-  'responders pass authorization and retain evidence validation'
+  '42501',
+  'Responder access is read-only',
+  'responders cannot submit incident reports'
 );
 
 SELECT set_config('request.jwt.claim.sub', '44444444-4444-4444-8444-444444444444', true);
@@ -135,30 +135,19 @@ SELECT throws_ok(
     )$$,
   '42501',
   NULL,
-  'responders can report incidents but cannot change operational status'
+  'responders cannot change operational status'
 );
 
 RESET ROLE;
 SET LOCAL ROLE service_role;
 
-SELECT ok(
-  public.claim_ai_job(
-    '88888888-8888-4888-8888-888888888888',
-    '33333333-3333-4333-8333-333333333333'
-  ),
-  'responders can start AI classification for their own reports'
+SELECT throws_ok(
+  $$SELECT public.claim_ai_job('88888888-8888-4888-8888-888888888888','33333333-3333-4333-8333-333333333333')$$,
+  '42501', NULL, 'responders cannot claim their own historical report'
 );
-SELECT is(
-  (public.record_ai_assessment(
-    '88888888-8888-4888-8888-888888888888',
-    'fire',
-    'high',
-    'Smoke is reported near the building.',
-    'test-model',
-    '33333333-3333-4333-8333-333333333333'
-  )).suggested_category,
-  'fire'::public.incident_category,
-  'responders can save an AI assessment for their own reports'
+SELECT throws_ok(
+  $$SELECT public.record_ai_assessment('88888888-8888-4888-8888-888888888888','fire','high','Fixture','test-model','33333333-3333-4333-8333-333333333333')$$,
+  '42501', NULL, 'responders cannot record assessments for their own historical reports'
 );
 SELECT throws_ok(
   $$SELECT public.claim_ai_job(

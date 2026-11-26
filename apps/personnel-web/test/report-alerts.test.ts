@@ -44,7 +44,7 @@ test("alert once per incident across live inserts, catch-up reads, and dashboard
   insert({ new: live });
   assert.deepEqual(arrivals, ["LIVE"]);
   catchUpRows = [live, missed];
-  events.dispatchEvent(new Event("focus"));
+  events.dispatchEvent(new Event("online"));
   await flush();
   insert({ new: missed });
   assert.deepEqual(arrivals, ["LIVE", "MISSED"]);
@@ -55,6 +55,7 @@ test("alert once per incident across live inserts, catch-up reads, and dashboard
   assert.match(queries.at(-1)?.searchParams.get("or") ?? "", /id.gt.03/);
   stop();
   const reads = queries.length;
+  events.dispatchEvent(new Event("online"));
   events.dispatchEvent(new Event("focus"));
   insert({ new: { ...missed, id: "04" } });
   assert.equal(queries.length, reads);

@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "fs";
 import { resolve, join } from "path";
@@ -534,6 +535,7 @@ async function run() {
   } catch (err) {
     missingPhotosError = err;
   }
+  assert.equal(missingPhotosError?.code, "22023");
   console.log(`  [PASS] submit_incident rejects empty photos: ${missingPhotosError !== null && missingPhotosError.message.includes('Between one and five unique evidence photos are required')}`);
 
   // Test 19: submit_incident rejects foreign evidence uploaded by another user
@@ -552,6 +554,7 @@ async function run() {
   } catch (err) {
     foreignEvidenceError = err;
   }
+  assert.equal(foreignEvidenceError?.code, "22023");
   console.log(`  [PASS] submit_incident rejects foreign evidence path: ${foreignEvidenceError !== null && foreignEvidenceError.message.includes('Required evidence must be uploaded')}`);
 
   // Test 20: Invalid status transition rejected (pending -> closed is forbidden)
@@ -568,6 +571,7 @@ async function run() {
   } catch (err) {
     invalidTransitionError = err;
   }
+  assert.equal(invalidTransitionError?.code, "22023");
   console.log(`  [PASS] Invalid status transition rejected: ${invalidTransitionError !== null}`);
 
   // Test 21: Ordinary resident cannot update status or review classification
@@ -598,10 +602,12 @@ async function run() {
   } catch (err) {
     residentUnauthorizedReviewError = err;
   }
+  assert.equal(residentUnauthorizedStatusError?.code, "42501");
+  assert.equal(residentUnauthorizedReviewError?.code, "42501");
   console.log(`  [PASS] Resident unauthorized for status update: ${residentUnauthorizedStatusError !== null}`);
   console.log(`  [PASS] Resident unauthorized for classification review: ${residentUnauthorizedReviewError !== null}`);
 
-  // Test 22: Responder personnel can also submit incidents via submit_incident
+  // Test 22: Responder can read reports but cannot change incident data
   const responderId = "33333333-3333-4333-8333-333333333333";
   const responderKey = "ffffffff-ffff-4fff-8fff-ffffffffffff";
   const responderPhoto = `${responderId}/${responderKey}/scene.jpg`;
@@ -613,7 +619,7 @@ async function run() {
     VALUES ('incident-evidence', '${responderPhoto}', '${responderId}', '{"mimetype":"image/jpeg","size":"4096"}'::jsonb);
     SET request.jwt.claim.sub = '${responderId}';
   `);
-  const responderSubmitRes = await db.query(`
+  await assert.rejects(db.query(`
     SELECT * FROM public.submit_incident(
       '${responderKey}'::uuid,
       'Field report: fallen tree obstructing both lanes on national highway',
@@ -622,8 +628,31 @@ async function run() {
       122.1020,
       ARRAY['${responderPhoto}']
     );
-  `);
-  console.log(`  [PASS] Responder personnel incident submission succeeded: reference=${responderSubmitRes.rows[0].reference}`);
+  `), { code: "42501" });
+
+  const id = submitRpcRes.rows[0].id;
+  // Supabase Storage supplies these grants and enables RLS outside app migrations.
+  await db.exec(`ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+    GRANT USAGE ON SCHEMA storage, auth TO authenticated;
+    GRANT SELECT, INSERT, DELETE ON storage.objects TO authenticated;`);
+  await db.exec("SET ROLE authenticated");
+  assert.equal((await db.query("SELECT name FROM storage.objects WHERE name=$1", [responderPhoto])).rows.length, 1);
+  await assert.rejects(db.query("INSERT INTO storage.objects(bucket_id,name) VALUES ('incident-evidence',$1)", [responderPhoto.replace("scene.jpg","second.jpg")]), {code:"42501"});
+  assert.equal((await db.query("DELETE FROM storage.objects WHERE name=$1 RETURNING name", [responderPhoto])).rows.length, 0);
+  assert.equal((await db.query("SELECT id FROM public.incidents WHERE id=$1", [id])).rows.length, 1);
+  await assert.rejects(db.query("SELECT public.update_incident_status($1,'in_progress',NULL)",[id]), {code:"42501"});
+  await assert.rejects(db.query("SELECT public.review_incident_classification($1,'other','low',NULL,NULL)",[id]), {code:"42501"});
+  await db.exec(`SET request.jwt.claim.sub = '${staffId}'`);
+  for (const next of ["in_progress","resolved","closed"]) {
+    assert.equal((await db.query("SELECT status FROM public.update_incident_status($1,$2,'QA retest')",[id,next])).rows[0].status,next);
+  }
+  assert.equal((await db.query("SELECT status FROM public.incidents WHERE id=$1",[id])).rows[0].status,"closed");
+  const history = await db.query("SELECT to_status FROM public.incident_status_history WHERE incident_id=$1",[id]);
+  assert.deepEqual(history.rows.map(r=>r.to_status).sort(),["closed","in_progress","pending","resolved"]);
+  await assert.rejects(db.query("SELECT public.update_incident_status($1,'pending',NULL)",[id]), {code:"22023"});
+  await db.exec("RESET ROLE");
+  assert.equal((await db.query("SELECT app_private.can_classify_incident($1,$2) AS allowed", [responderId,id])).rows[0].allowed, false);
+  console.log("  [PASS] Responder reads reports but cannot submit, update status or correct labels; officer closes report with four retrievable history entries");
 
   // Test 23: Activity logs are visible only to admins and super admins
   const adminId = "44444444-4444-4444-8444-444444444444";

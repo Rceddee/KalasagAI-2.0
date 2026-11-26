@@ -343,11 +343,10 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
     const isPersonnel =
       profile !== null &&
-      ["responder", "communication_officer", "admin", "super_admin"].includes(
+      ["communication_officer", "admin", "super_admin"].includes(
         profile.role,
       );
     const isResident = profile?.role === "resident";
-    const isReporter = isResident || profile?.role === "responder";
     if (!isPersonnel && !isResident) {
       return response({ error: "Not authorized to classify incidents" }, 403);
     }
@@ -364,9 +363,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (!data) {
       return response({ error: "Incident not found" }, 404);
     }
-    if (isReporter && data.resident_id !== userResult.user.id) {
+    if (isResident && data.resident_id !== userResult.user.id) {
       return response(
-        { error: "Residents and responders may classify only their own reports" },
+        { error: "Residents may classify only their own reports" },
         403,
       );
     }
